@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprar</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+    <!--  Inicio de la seccion del Popup -->
+    <div class="container_popup" id="container_popup">
+        <div class="popup-buy">
+            <img src="/images/icon-success.png" class="icon-buy-popup" id="icon-buy-popup" alt="success">
+            <h3 class="title-popup-buy" id="title-popup-buy">¡Felicidades!</h3>
+            <div class="message-popup-buy" id="message-popup-buy">
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat accusantium amet, omnis illum magnam
+                officia quo facilis quas incidunt atque aliquid repellat voluptate sint aperiam sed ipsum! Voluptate,
+                perferendis aperiam?
+            </div>
+            <button class="btn-buy-popup" id="btn-buy-popup">
+                Aceptar
+            </button>
+        </div>
+    </div>
+    <!-- Final de la seccion del Popup -->
+
+    <!--  Inicio del Formulario -->
+    <form class="formu_compra" name="formBuyTicket">
+        <h1 id="title">Compra tu Boleto</h1>
+
+        <!--  Item para el Nombre -->
+        <div class="item-form">
+            <label for="">Nombre</label>
+            <div class="container-values">
+                <input type="text" name="nombre" id="nombre" onpaste="return false" oncopy="return false">
+                <p class="alert_input"></p>
+            </div>
+
+        </div>
+
+        <!--  Item para el Apellido -->
+        <div class="item-form">
+            <label for="">Apellido</label>
+            <div class="container-values">
+                <input type="text" name="apellido" id="apellido" onpaste="return false" oncopy="return false">
+                <p class="alert_input"></p>
+            </div>
+
+        </div>
+
+        <!--  Item para la Cedula -->
+        <div class="item-form">
+            <label for="">Cedula</label>
+            <div class="container-values">
+                <input type="number" data-maxlength="8" oninput="this.value=this.value.slice(0,this.dataset.maxlength)"
+                    name="cedula" id="cedula" onpaste="return false" oncopy="return false"
+                    onkeypress="return (event.charCode >= 48 && event.charCode <= 57)">
+                <p class="alert_input"></p>
+            </div>
+
+        </div>
+
+        <!--  Item para el Telefono -->
+        <div class="item-form">
+            <label for="">Telefono</label>
+            <div class="container-values">
+                <input type="number" data-maxlength="11" oninput="this.value=this.value.slice(0,this.dataset.maxlength)"
+                    name="telefono" id="telefono" onpaste="return false" oncopy="return false"
+                    onkeypress="return (event.charCode >= 48 && event.charCode <= 57)">
+                <p class="alert_input"></p>
+            </div>
+        </div>
+
+        <br><br>
+        <!--  Item para el id de Afiliado -->
+        <input type="hidden" readonly name="num_afiliate" value=<%=afiliate %>>
+        <!--  Item para el Numero de Boleto o los numero de Boleto -->
+        <input type="hidden" readonly name="boleto" id="boleto" value=<%=strigTiket %> >
+                
+        <button type="button" id="btn_submit" class="button-buy-active">Comprar Boleto</button>
+    </form>
+    <br><br>
+    <!--  Final del Formulario -->
+
+    <script src="/comprar.js"></script>
+</body>
+
+</html>

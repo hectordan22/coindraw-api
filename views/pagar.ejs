@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="py-client" content="2D88F5BC53124F2A" />
+    <title>Pagar Boleto</title>
+</head>
+
+<body>
+    <!--  Item para el id de Afiliado -->
+    <h1>Tu Pedido</h1>
+    <h3>Monto : <%= amount %> </h3>
+    <button onclick="Pagar()">Pagar</button>
+    <input type="hidden" readonly id="amountBoleto" value=<%= amount %>>
+     <script src="/pagar.js"></script>
+</body>
+
+</html>

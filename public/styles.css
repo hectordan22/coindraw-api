@@ -1,0 +1,297 @@
+*{
+    margin: auto;
+    padding: auto;
+}
+
+
+h1{
+    color: rgba(25, 46, 77, 0.842);
+    margin-bottom: 1em;
+}
+
+body{
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    color: #fff;
+    background: -webkit-linear-gradient(rgba(24, 33, 80, 0.5),rgba(255, 220, 179, 0.678));
+    background-size: cover;
+    
+}
+
+#title{
+    width: 80%;
+    text-align: center;
+}
+
+
+
+.button-buy-active{
+    width: 30%;
+    border: none;
+    border-radius: 2px;
+    padding: 5px;
+    margin-top: 1em;
+    height: 38px;
+    cursor: pointer;
+    font-size: 16px;
+   
+    color: #ede7cf;
+    box-shadow: 0 0 40px rgb(255, 255, 255);
+    background: -webkit-linear-gradient(rgba(225, 150, 45, 0.71),rgba(22, 19, 57, 0.708));
+    border-radius: 16px;
+    
+}
+
+.alert_input{
+  color: rgb(116, 22, 5);
+  font-size: 16px;
+  margin-top: 5px;
+  text-align:center;
+  width: 100%;
+  letter-spacing: 0.8px;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.button-buy-desactive{
+    width: 30%;
+    border: 1px solid gray;
+    border-radius: 5px;
+    padding: 5px;
+    margin-top: 1em;
+    height: 38px;
+    cursor: pointer;
+    font-size: 16px;
+    background-color: rgba(194, 194, 206, 0.651);
+    color: #0c0c0c;
+}
+
+/* Estilos para el popup de Compra */
+.container_popup{
+    height: 120vh;
+    width: 100%;
+    background-color: #0c0c0c10;
+    position: absolute;
+    top: 0;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(10px);
+}
+
+.popup-buy{
+    width: 500px;
+    height: auto;
+    background-color: #fff;
+    border-radius: 10px;
+    color: #0c0c0c;
+    z-index: 99;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+.icon-buy-popup{
+    width: 50px;
+    height: 50px;
+    margin-bottom: 15px;
+    margin-top: 25px;
+}
+
+.message-popup-buy{
+    width: 80%;
+    text-align: center;
+    margin-bottom: 25px;
+    margin-top: 15px;
+}
+
+.btn-buy-popup{
+    width: 70%;
+    border: none;
+    border-radius: 5px;
+    text-align: center;
+    background-color: #410996;
+    color: #fff;
+    height: 40px;
+    cursor: pointer;
+    margin-bottom: 15px;
+    margin-top: 25px;
+}
+
+.btn-buy:hover{
+    background-color: #4109969c;
+}
+
+.title-popup-buy{
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+/* Quitar flechas en input numerico Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Quitar Flechas en input numerico Firefox */
+input[type=number] {
+  -moz-appearance:textfield;
+}
+
+.formu_compra{
+ width: 100%;
+}
+
+#title{
+    font-size: 22px;
+   }
+   .formu_compra{
+    margin-top: 2em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+   }
+   .button-buy-active{
+    width: 80%;
+   }
+   input{
+     border-radius: 5px;
+     height: 30px;
+     border: none;
+     margin-top: 10px;
+     color: #0e0d0d;
+     font-size: 16px;
+     background-color: #f0ebebfa;
+     font-weight: 600;
+   }
+
+   .item-form{
+     margin-top: 30px;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     width: 80%;
+   }
+   label{
+    text-align: center;
+    color: #160d5a;
+    font-weight: 500;
+   }
+   .container-values{
+     width: 90%;
+     display: flex;
+     flex-direction: column;
+     justify-content: center;
+     align-items: center;
+     height: auto;
+   }
+
+   .alert_input{
+     width: 200px;
+   }
+
+@media (min-width:380px) and (max-width: 600px){
+    .alert_input{
+        width: 270px;
+      }
+      .button-buy-active{
+        width: 60%;
+       }
+       #title{
+        font-size: 25px;
+       }
+      
+}
+
+@media (min-width:600px) and (max-width: 980px){
+    .alert_input{
+        width: 370px;
+      }
+      .button-buy-active{
+        width: 300px
+       }
+       #title{
+        font-size: 27px;
+       }
+       .formu_compra{
+        height: auto;
+       }
+}
+
+@media (min-width:980px) and (max-width: 1224px) {
+    .alert_input{
+        width: 100%;
+      }
+      .button-buy-active{
+        width: 70%;
+       }
+       #title{
+        font-size: 27px;
+       }
+
+       .item-form{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+      }
+      .container-values{
+        width: 60%;
+      }
+      .formu_compra{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 35%;
+         margin-left: auto;
+         margin-right: auto;
+         margin-top: 5em;
+       }
+       
+   .item-form{
+    width: 95%;
+  }
+  .formu_compra{
+    height: 100vh;
+   }
+}
+
+@media (min-width:1224px){
+    #title{
+        font-size: 27px;
+       }
+    .formu_compra{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 29%;
+         margin-left: auto;
+         margin-right: auto;
+         margin-top: 5em;
+       }
+
+       .item-form{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .container-values{
+        width: 60%;
+      }
+      .alert_input{
+        width: 100%;
+        font-size: 13px;
+      }
+      .item-form{
+        width: 90%;
+      }
+      .formu_compra{
+        height: 100vh;
+       }
+}
