@@ -5,25 +5,22 @@ import { Router } from 'express'
 
 import {
     getSorteoBuyers,
-    getRifasBuyers,
     comprarSorteo,
-    comprarRifa,
-    searchTicket,
- } from '../controllers/customers.controller.js'
+    getBuyerSorteoId,
+    addWinnerSorteo,
+    getLastWinnersSorteo
+ } from '../controllers/sorteos.controller.js'
 
 const router = Router()
 
 
 router.get('/coindraw/getSorteoBuyers', getSorteoBuyers)
-
-router.get('/coindraw/getRifasBuyers', getRifasBuyers)
-
-router.get('/coindraw/searchTicket/:id_compra', searchTicket)
-
-
+router.get('/coindraw/getBuyerId/:boleto', getBuyerSorteoId)
+router.get('/coindraw/getLastWinnersSorteo', getLastWinnersSorteo)
 router.post('/coindraw/comprarSorteo', comprarSorteo)
+router.post('/coindraw/addWinnerSorteo', addWinnerSorteo)
 
-router.post('/coindraw/comprarRifa', comprarRifa)
+
 
 
 // exporto las rutas para que se usen desde index.js

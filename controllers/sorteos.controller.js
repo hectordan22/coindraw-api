@@ -7,7 +7,6 @@ import { v4 as uuidv4 } from 'uuid';
 // Muestra todos los compradores de sorteo
 
 export const getSorteoBuyers = async (req, res) => {
-    console.log('se llama a todos los que compraron Sorteo')
     try {
         const [rows] = await pool.query('SELECT * FROM buyers_sorteo')
         setTimeout(() => {
@@ -19,6 +18,7 @@ export const getSorteoBuyers = async (req, res) => {
 
 
     } catch (error) {
+        console.log(error)
         setTimeout(() => {
             return res.status(500).json({
                 error: true,
@@ -30,30 +30,87 @@ export const getSorteoBuyers = async (req, res) => {
 
 }
 
-export const getRifasBuyers = async (req, res) => {
-    console.log('se llama a todos los que compraron Rifas')
+// busca el listado de los ganadores del sorteo
+export const getLastWinnersSorteo = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM buyers_rifa')
+        const [rows] = await pool.query('SELECT * FROM winners_sorteo ORDER BY fecha DESC LIMIT 6')
         setTimeout(() => {
             return res.status(200).json({
                 error: false,
                 response: rows
             })
-        }, 5000);
+        }, 3000);
 
 
     } catch (error) {
+        console.log(error)
         setTimeout(() => {
             return res.status(500).json({
                 error: true,
                 response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
             })
-        }, 5000);
+        }, 3000);
 
     }
+
 }
 
+export const getBuyerSorteoId = async (req,res) => {
+    const boleto = req.params.boleto
+    const [query] = await pool.query('SELECT * FROM buyers_sorteo WHERE boleto = ?', [boleto])
+    console.log(query)
+    setTimeout(() => {
+        if (query.length != 0) {
+           const {nombre, apellido, cedula} = query[0] 
+            res.status(200).json({
+                error:false,
+                user:{
+                  nombre,
+                  apellido,
+                  cedula
+                }
+              })
+        }else{
+            res.status(404).json({
+               error:true,
+               message:'El usuario no fue encontrado'
+            })
+        }
+       
+    },3000)
+    
+}
 
+export const addWinnerSorteo = async (req,res) => {
+    const {nombre, apellido,cedula, boleto} = req.body
+    try {
+        const [query] = await pool.query('SELECT * FROM winners_sorteo WHERE boleto = ?', [boleto])
+        if (query.length === 0) {
+            const [rows] = await pool.query('INSERT INTO winners_sorteo (nombre,apellido,cedula,boleto) VALUES (?,?,?,?)', [nombre, apellido, cedula, boleto])
+            if(rows.affectedRows === 1){
+                res.status(200).json({
+                    error:false,
+                    message:'registro exitoso'
+                })
+            }else{
+                res.status(200).json({
+                    error:true,
+                    message:'El usuario no pudo registrarse'
+                })
+            }
+        }else{
+            res.status(200).json({
+                error:true,
+                message: 'La persona que intentas registrar como ganador del sorteo ya fue registrada'
+            })
+        }
+    } catch (error) {
+        res.status(500).json({
+            error:true,
+            message: 'Ocurrio un error inesperado. Intentalo mas tarde'
+        })
+    } 
+}
 
 
 // method POST para registrar una nuevo comprador de sorteo
@@ -141,114 +198,6 @@ export const comprarSorteo = async (req, res) => {
 
 }
 
-
-export const comprarRifa = async (req, res) => {
-    console.log('quiere comprar Rifa')
-    try {
-        const { nombre, apellido, cedula, telefono, boletos } = req.body
-        let decodedStringBoleto = atob(boletos);
-        const compra = JSON.parse(decodedStringBoleto)
-
-        let notInserts = []
-        let inserts = []
-        let id_compra = uuidv4()
-
-        for (let i = 0; i < compra.length; i++) {
-            const ticket = compra[i];
-            const [query] = await pool.query('SELECT * FROM buyers_rifa WHERE boleto = ?', [ticket])
-            if (query.length === 0) {
-                // Si no se ha comprado ese Numero de Boleto procedo a Insertar
-                const [rows] = await pool.query('INSERT INTO buyers_rifa (nombre,apellido,cedula,telefono,boleto,id_compra) VALUES (?,?,?,?,?,?)', [nombre, apellido, cedula, telefono, ticket, id_compra])
-                console.log(rows)
-                if (rows.affectedRows === 1) {
-                    inserts.push(ticket)
-                }
-
-                // Luego de Insertar al comprador debo verificar si dicho numero de afiliado existe en la tabla de afiliados
-            } else {
-                notInserts.push(ticket)
-            }
-        }
-        res.status(200).json({
-            error: false,
-            info: {
-                solicitud_compra: compra,
-                notInserts,
-                inserts
-            }
-        })
-    }catch(error){
-        return res.status(500).json({
-            error: true,
-            info: {
-                message: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
-            }
-
-        })
-    }
-}
-
-
-// Verifica si se ha Realizado una compra para crear una url personalizada para Referidos
-export const searchTicket = async (req, res) => {
-    const id_compra = req.params.id_compra
-    try {
-        // Compruebo que el usuario realmente Haya comprado un Boleto
-        const [rows] = await pool.query('SELECT * FROM buyers WHERE id_compra = ?', [id_compra])
-        /* console.log(rows[0]) */
-        if (rows.length === 0) {
-            return res.status(200).json({
-                error: true,
-                message: 'Solo puedes Generar enlace personalizado si has comprado un boleto'
-            })
-        }
-        // Si el usuario Si realizo una compra pero quiere generar un enlace de nuevo
-        const [results] = await pool.query('SELECT * FROM buyers_sorteo WHERE id_compra = ? AND enlace = ?', [boleto, 0])
-        // No se puede permitir
-        if (results.length === 0) {
-            return res.status(200).json({
-                error: true,
-                message: 'Estimado usuario solo puede Generar un enlace por Compra de Boleto'
-            })
-        }
-        // Hago Consulta para colocar enlace de esa compra como creado
-
-        const [result] = await pool.query('UPDATE buyers_sorteo SET enlace = ? WHERE boleto = ?', [1, boleto])
-        // Si hubo un error y no se registro la compra
-        if (result.affectedRows === 0) return res.status(404).json({
-            error: true,
-            enlace: false,
-            message: 'No se pudo Generar el enlace. Intenta Nuevamente'
-        })
-
-        // Si no hubo ningun error significa que lo creo correctamente: Entonces procedo a registrar en la tabla de afiliados
-
-
-        try {
-            let id_enlace = uuidv4()
-            const [afiliate] = await pool.query('INSERT INTO afiliates (id_afiliate,alcanzados,id_boleto) VALUES (?,?,?)', [id_enlace, 0, boleto])
-            return res.status(200).json({
-                error: false,
-                enlace: true,
-                data: rows[0],
-                id_enlace: id_enlace
-            })
-        } catch (error) {
-            return res.status(500).json({
-                error: true,
-                enlace: false,
-                message: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
-            })
-        }
-
-    } catch (error) {
-        return res.status(500).json({
-            error: true,
-            enlace: false,
-            message: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
-        })
-    }
-}
 
 
 

@@ -3,20 +3,26 @@ import { Router } from "express";
 
 const router = Router()
 
-import { pagar, 
+import { 
     updateCustomer, 
     deleteCustomer,
-    getCustomer, 
-    getPriceDolar } from '../controllers/rifas.controller.js'
+    getPriceDolar ,
+    getRifasBuyers,
+    comprarRifa,
+    getBuyerRifaId
+} from '../controllers/rifas.controller.js'
 
-router.get('/coindraw/getCustomer/:id', getCustomer)
-
-router.get('/coindraw/pagar', pagar)
 
 router.put('/coindraw/updateCustomer/:id', updateCustomer)
 
 router.delete('/coindraw/deleteCustomer/:id', deleteCustomer)
 
 router.get('/coindraw/getDolar', getPriceDolar)
+
+router.get('/coindraw/getRifasBuyers', getRifasBuyers)
+
+router.get('/coindraw/getBuyerRifaId', getBuyerRifaId)
+
+router.post('/coindraw/comprarRifa', comprarRifa)
 // exporto las rutas para que se usen desde index.js
 export default router

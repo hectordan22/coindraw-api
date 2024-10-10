@@ -3,17 +3,14 @@
 import express from 'express'
 
 // importo la ruta del CRUD de los clientes
-import customers from './routes/customers.router.js'
+import sorteos from './routes/sorteos.router.js'
+import rifas from './routes/rifas.router.js'
+import initialData from './routes/initialData.router.js'
 
 import cors from 'cors'
-//import { dirname, join } from "path";
-//import { fileURLToPath } from "url";
+
 
 const app = express()
-
-
-//const __dirname = dirname(fileURLToPath(import.meta.url));
-
 
 // indico que se pueden recibir json desde el cuerpo de la peticion
 app.use(express.json())
@@ -25,20 +22,12 @@ app.use(express.urlencoded({extended: false}));
 // Frontends de distintos dominios 
 app.use(cors())
 
-
-// Establece EJS como el motor de plantilla
-app.set("view engine", "ejs")
-//app.set("views", join(__dirname,"views"))
-
 // Permite usar Static Files: HTML,CSS, Js
 app.use(express.static("public"));
-/* app.use(express.static(join(__dirname, "public")));
-console.log(join(__dirname, "public")) */
-// Rutas
 
-
-app.use('/api',customers)
-
+app.use('/api',sorteos)
+app.use('/api',rifas)
+app.use('/api', initialData)
 
 
 // defino ruta 404
