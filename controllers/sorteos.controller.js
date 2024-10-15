@@ -198,6 +198,31 @@ export const comprarSorteo = async (req, res) => {
 
 }
 
+export const updateVideoSorteo = async (req,res) => {
+    const {id, urlVideoSorteo} = req.body
+    try {
+        const [result] = await pool.query('UPDATE winners_sorteo SET url_video = ? WHERE id = ?', [urlVideoSorteo, id]);
+      
+        if (result.affectedRows > 0) {
+          res.status(200).json({
+            error:false,
+            response:'Usuario actualizado correctamente'
+          })
+        } else {
+            res.status(200).json({
+                error:true,
+                response:'No se encontro un usuario con ese id'
+            })
+        }
+      } catch (error) {
+        return res.status(500).json({
+            error: true,
+            response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
+        })
+      }
+
+}
+
 
 
 

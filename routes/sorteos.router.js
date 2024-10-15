@@ -8,7 +8,8 @@ import {
     comprarSorteo,
     getBuyerSorteoId,
     addWinnerSorteo,
-    getLastWinnersSorteo
+    getLastWinnersSorteo,
+    updateVideoSorteo
  } from '../controllers/sorteos.controller.js'
 
 const router = Router()
@@ -19,6 +20,7 @@ router.get('/coindraw/getBuyerId/:boleto', getBuyerSorteoId)
 router.get('/coindraw/getLastWinnersSorteo', getLastWinnersSorteo)
 router.post('/coindraw/comprarSorteo', comprarSorteo)
 router.post('/coindraw/addWinnerSorteo', addWinnerSorteo)
+router.put('/coindraw/updateVideoSorteo', updateVideoSorteo)
 
 
 

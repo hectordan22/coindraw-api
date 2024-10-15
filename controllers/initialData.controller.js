@@ -1,3 +1,5 @@
+import { pool } from '../db.js'
+
 export const initialData = (req,res) => {
     return res.status(200).json({
         error: false,
@@ -71,4 +73,73 @@ export const initialData = (req,res) => {
 
         }
     })
+}
+
+export const addVideoInitial = async (req,res) => {
+   const {url} = req.body
+   try {
+       const [query] = await pool.query('SELECT * FROM video_inicio')
+       if (query.length === 0) {
+           const [result] = await pool.query('INSERT INTO video_inicio (url) VALUES (?) ', [url]);
+        setTimeout(() => {
+            if (result.affectedRows > 0) {
+                res.status(200).json({
+                  error:false,
+                  response:'video Agregado correctamente'
+                })
+              } else {
+                  res.status(200).json({
+                      error:true,
+                      response:'El video no pudo ser Agregado'
+                  })
+              }
+        }, 3000);
+         
+        }else{
+           const id = Number(query[0].id)
+           const [result] = await pool.query('UPDATE video_inicio SET url = ? WHERE id = ? ', [url,id]);
+          setTimeout(() => {
+            if (result.affectedRows > 0) {
+                res.status(200).json({
+                  error:false,
+                  response:'video Actualizado correctamente'
+                })
+              } else {
+                  res.status(200).json({
+                      error:true,
+                      response:'El video no pudo ser Actualizado'
+                  })
+              }
+          }, 3000);
+           
+        }
+   } catch (error) {
+    setTimeout(() => {
+        return res.status(500).json({
+            error: true,
+            response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
+        })
+    }, 3000);
+   
+   }
+} 
+
+export const getVideoInitial = async (req,res) => {
+   try {
+    const [query] = await pool.query('SELECT * FROM video_inicio')
+     setTimeout(() => {
+        res.status(200).json({
+            error:false,
+            response: query
+         })
+     }, 3000);
+      
+   } catch (error) {
+    setTimeout(() => {
+        return res.status(500).json({
+            error: true,
+            response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
+        })
+    }, 3000);
+   }
 }

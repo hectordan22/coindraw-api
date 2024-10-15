@@ -4,12 +4,16 @@ import { Router } from 'express'
 
 import {
     initialData,
+    addVideoInitial,
+    getVideoInitial
  } from '../controllers/initialData.controller.js'
 
 const router = Router()
 
 
 router.get('/initialData', initialData)
+router.post('/addVideoInitial', addVideoInitial)
+router.get('/getVideoInitial', getVideoInitial)
 
 
 
