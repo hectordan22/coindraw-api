@@ -1,6 +1,11 @@
 // Aca tengo toda la configuracion Global de la Api
 
 import express from 'express'
+import path from 'path'
+
+// importo para trabajar con url
+import {fileURLToPath} from 'url';
+
 
 // importo la ruta del CRUD de los clientes
 import sorteos from './routes/sorteos.router.js'
@@ -13,21 +18,26 @@ import cors from 'cors'
 const app = express()
 
 // indico que se pueden recibir json desde el cuerpo de la peticion
-app.use(express.json())
+app.use(express.json({ limit: '100mb' }))
 // Midleware para recibir los datos de un formulario
 app.use(express.urlencoded({extended: false}));
 
+/* app.use(express.static(path.join(__dirname, 'public'))); */
 
-// Antes de llamar a las rutas ejecuto CORS para que mi api pueda ser consumida desde
-// Frontends de distintos dominios 
-app.use(cors())
+//middleware cors para permitir conexion con el front
+app.use(cors({
+  origin: 'http://localhost:5173' // Reemplaza con el origen de tu aplicación React
+}));
 
-// Permite usar Static Files: HTML,CSS, Js
-app.use(express.static("public"));
+
 
 app.use('/api',sorteos)
 app.use('/api',rifas)
 app.use('/api', initialData)
+
+
+const filename = fileURLToPath(import.meta.url);
+app.use(express.static(path.join(path.dirname(filename), 'public'))) 
 
 
 // defino ruta 404

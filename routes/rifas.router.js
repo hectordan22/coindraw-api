@@ -1,7 +1,9 @@
 import { Router } from "express";
+import multer from 'multer'
 
 
 const router = Router()
+const upload = multer({dest:'public/premios/'})
 
 import { 
     updateCustomer, 
@@ -9,9 +11,15 @@ import {
     getPriceDolar ,
     getRifasBuyers,
     comprarRifa,
-    getBuyerRifaId
+    getBuyerRifaId,
+    getPremios,
+    createPremio,
+    updatePremio
 } from '../controllers/rifas.controller.js'
 
+router.get('/getPremios', getPremios)
+router.post('/createPremio', upload.single('imagenPremio'), createPremio)
+router.put('/updatePremio', upload.single('imagenPremio'), updatePremio)
 
 router.put('/coindraw/updateCustomer/:id', updateCustomer)
 

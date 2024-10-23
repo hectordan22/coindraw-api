@@ -1,5 +1,6 @@
 import { pool } from '../db.js'
 
+
 export const initialData = (req,res) => {
     return res.status(200).json({
         error: false,
@@ -143,3 +144,8 @@ export const getVideoInitial = async (req,res) => {
     }, 3000);
    }
 }
+
+
+
+
+

@@ -1,5 +1,6 @@
 import { Router } from 'express'
 
+
 // importo las funciones controladoras de la ruta
 
 import {
@@ -14,6 +15,7 @@ const router = Router()
 router.get('/initialData', initialData)
 router.post('/addVideoInitial', addVideoInitial)
 router.get('/getVideoInitial', getVideoInitial)
+
 
 
 
