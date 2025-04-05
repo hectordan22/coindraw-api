@@ -25,48 +25,66 @@ export const getRifasBuyers = async (req, res) => {
   console.log("se llama a todos los que compraron Rifas");
   try {
     const [rows] = await pool.query("SELECT * FROM buyers_rifa");
-    setTimeout(() => {
       return res.status(200).json({
         error: false,
         response: rows,
       });
-    }, 5000);
+ 
   } catch (error) {
-    setTimeout(() => {
       return res.status(500).json({
         error: true,
         response:
           "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
       });
-    }, 5000);
   }
 };
 
 export const getBuyerRifaId = async (req, res) => {
   const boleto = req.params.boleto;
-  const [query] = await pool.query(
-    "SELECT * FROM buyers_rifa WHERE boleto = ?",
-    [boleto]
-  );
-  console.log(query);
-  setTimeout(() => {
-    if (query.length != 0) {
-      const { nombre, apellido, cedula } = query[0];
+  try {
+    const [winners] = await pool.query(
+      "SELECT * FROM winners_rifa WHERE boleto = ?",
+      [boleto]
+    );
+
+    if (winners.length === 0) {
+      const [query] = await pool.query(
+        "SELECT * FROM buyers_rifa WHERE boleto = ?",
+        [boleto]
+      );
+        if (query.length > 0) {
+          const { nombre, apellido, cedula } = query[0];
+          res.status(200).json({
+            error: false,
+            user: {
+              nombre,
+              apellido,
+              cedula,
+            },
+          });
+        } else {
+          res.status(404).json({
+            error: true,
+            message: "No existe compra registrada con ese numero de boleto",
+          });
+        }
+    }else{
       res.status(200).json({
-        error: false,
-        user: {
-          nombre,
-          apellido,
-          cedula,
-        },
-      });
-    } else {
-      res.status(404).json({
         error: true,
-        message: "El usuario no fue encontrado",
+        message: "Dicha persona ya fue registrada como ganador",
       });
     }
-  }, 3000);
+   
+  } catch (error) {
+    return res.status(500).json({
+      error: true,
+      info: {
+        message:
+          "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
+      },
+    });
+  }
+ 
 };
 
 /**
@@ -189,21 +207,24 @@ export const getPriceDolar = async (req, res) => {
 };
 
 export const getPremios = async (req, res) => {
+  const { addWinner } = req.query // este parametro es solo cuando se desea agregar un nuevo ganador y asociarlo a un premio
+
   try {
-    const [query] = await pool.query(
-      "SELECT * FROM premios ORDER BY number_premio ASC"
-    );
-    const premio_principal = query.filter(
+   const query = addWinner ? 
+   "SELECT p.* FROM premios p LEFT JOIN winners_rifa w ON p.id = w.id_premio WHERE w.id_premio IS NULL ORDER BY number_premio ASC":
+   "SELECT * FROM premios"
+   const [result] = await pool.query(query);
+    console.log(result)
+    const premio_principal = result.filter(
       (item) => item.tipo === "premio_principal"
     );
-    const premio_sorpresa = query.filter(
+    const premio_sorpresa = result.filter(
       (item) => item.tipo === "premio_sorpresa"
     );
-    const primeros_eliminados = query.filter(
+    const primeros_eliminados = result.filter(
       (item) => item.tipo === "primeros_eliminados"
     );
 
-    setTimeout(() => {
       res.status(200).json({
         error: false,
         response: {
@@ -212,15 +233,13 @@ export const getPremios = async (req, res) => {
           primeros_eliminados,
         },
       });
-    }, 3000);
   } catch (error) {
-    setTimeout(() => {
+    console.log(error)
       return res.status(500).json({
         error: true,
         response:
           "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
       });
-    }, 3000);
   }
 };
 
@@ -258,8 +277,16 @@ export const updatePremio = async (req, res) => {
   const id = body.id;
   try {
     const [rows] = await pool.query("SELECT * FROM premios WHERE id = ?", [id]);
-    console.log(rows[0]);
-    const image = req.file ? req.file : rows[0].imagen;
+     let image 
+    if (req.file) {
+      const { nameImage } = saveImage(req.file);
+      image = nameImage
+      console.log(image)
+    }else{
+      image = rows[0].imagen;
+    }
+    
+     console.log(image)
     const title = body.title ? body.title : rows[0].titulo;
     const description = body.description? body.description: rows[0].descripcion;
 
@@ -279,6 +306,7 @@ export const updatePremio = async (req, res) => {
       response:'Premio actualizado correctamente'
     })
   } catch (error) {
+    console.log(error)
     return res.status(500).json({
       error:true,
       response: "Ha ocurrido temporalmente debido a un error inesperado",
@@ -286,3 +314,131 @@ export const updatePremio = async (req, res) => {
   }
 
 };
+
+export const addNewRifa = async (req,res) => {
+  const {date,hour,name} = req.body
+  console.log(req.body)
+  const nombre = name || 'Super Rifa'
+  try {
+    const [rows] = await pool.query(
+      "INSERT INTO rifa (nombre,fecha,hora) VALUES (?,?,?)",
+      [nombre, date, hour]
+    );
+    if (rows.affectedRows === 0) {
+        return res.status(200).json({
+          error: true,
+          response: "No se pudo crear el recurso",
+        });
+    } else {
+        return res.status(200).json({
+          error: false,
+          response: "La hora de la rifa se ha registrado correctamente",
+        });
+    }
+  } catch (error) {
+    console.log(error)
+      return res.status(500).json({
+        error:true,
+        response: "Ha ocurrido temporalmente debido a un error inesperado",
+      });
+  }
+}
+
+export const getRifa = async (req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT * FROM rifa");
+    if(!req && !res) return {
+      error: false,
+      response: rows
+    }
+      return res.status(200).json({
+        error: false,
+        response: rows
+      });
+  } catch (error) {
+    if(!req && !res) return {
+      error: true,
+      response:
+        "La ruta solicitada no esta disponible temporalmente debido a un error inesperado"
+    }
+      return res.status(500).json({
+        error: true,
+        response:
+          "La ruta solicitada no esta disponible temporalmente debido a un error inesperado"
+      });
+  }
+};
+
+// busca el listado de los ganadores del sorteo
+export const getLastWinnersRifa = async (req, res) => {
+  try {
+      const [rows] = await pool.query('SELECT winners_rifa.nombre, winners_rifa.id, winners_rifa.apellido, winners_rifa.cedula,winners_rifa.boleto, winners_rifa.url_video, winners_rifa.fecha, premios.tipo AS tipo_premio, premios.descripcion FROM winners_rifa INNER JOIN premios ON winners_rifa.id_premio = premios.id')
+          return res.status(200).json({
+              error: false,
+              response: rows
+          })
+  } catch (error) {
+      console.log(error)
+          return res.status(500).json({
+              error: true,
+              response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
+          })
+  }
+
+}
+
+export const updateVideoRifa = async (req,res) => {
+  const {id, urlVideoSorteo} = req.body
+  try {
+      const [result] = await pool.query('UPDATE winners_rifa SET url_video = ? WHERE id = ?', [urlVideoSorteo, id]);
+    
+      if (result.affectedRows > 0) {
+        res.status(200).json({
+          error:false,
+          response:'Usuario actualizado correctamente'
+        })
+      } else {
+          res.status(200).json({
+              error:true,
+              response:'No se encontro un usuario con ese id'
+          })
+      }
+    } catch (error) {
+      return res.status(500).json({
+          error: true,
+          response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
+      })
+    }
+}
+
+export const addWinnerRifa = async (req,res) => {
+  const {nombre, apellido,cedula, boleto, id_premio} = req.body
+  try {
+      const [query] = await pool.query('SELECT * FROM  winners_rifa WHERE boleto = ?', [boleto])
+      if (query.length === 0) {
+          const [rows] = await pool.query('INSERT INTO winners_rifa (nombre,apellido,cedula,boleto,id_premio) VALUES (?,?,?,?,?)', [nombre, apellido, cedula, boleto,id_premio])
+          if(rows.affectedRows === 1){
+              res.status(200).json({
+                  error:false,
+                  message:'registro exitoso'
+              })
+          }else{
+              res.status(200).json({
+                  error:true,
+                  message:'El usuario no pudo registrarse'
+              })
+          }
+      }else{
+          res.status(200).json({
+              error:true,
+              message: 'Este ganador de Rifa ya fue registrado'
+          })
+      }
+  } catch (error) {
+      res.status(500).json({
+          error:true,
+          message: 'Ocurrio un error inesperado. Intentalo mas tarde'
+      })
+  } 
+}
+

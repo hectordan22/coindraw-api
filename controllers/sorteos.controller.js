@@ -57,9 +57,13 @@ export const getLastWinnersSorteo = async (req, res) => {
 
 export const getBuyerSorteoId = async (req,res) => {
     const boleto = req.params.boleto
-    const [query] = await pool.query('SELECT * FROM buyers_sorteo WHERE boleto = ?', [boleto])
-    console.log(query)
-    setTimeout(() => {
+    const [winners] = await pool.query(
+        "SELECT * FROM winners_sorteo WHERE boleto = ?",
+        [boleto]
+      );
+
+      if (winners.length === 0) {
+        const [query] = await pool.query('SELECT * FROM buyers_sorteo WHERE boleto = ?', [boleto])
         if (query.length != 0) {
            const {nombre, apellido, cedula} = query[0] 
             res.status(200).json({
@@ -76,9 +80,12 @@ export const getBuyerSorteoId = async (req,res) => {
                message:'El usuario no fue encontrado'
             })
         }
-       
-    },3000)
-    
+      }else{
+        res.status(200).json({
+            error:true,
+            message:'Esta persona ya fue asignada como ganador'
+         })
+      }
 }
 
 export const addWinnerSorteo = async (req,res) => {

@@ -26,7 +26,7 @@ app.use(express.urlencoded({extended: false}));
 
 //middleware cors para permitir conexion con el front
 app.use(cors({
-  origin: 'http://localhost:5173' // Reemplaza con el origen de tu aplicación React
+  origin: ['http://localhost:5173', 'http://localhost:5174'] // Reemplaza con el origen de tu aplicación React
 }));
 
 
