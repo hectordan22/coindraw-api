@@ -5,7 +5,6 @@ import { pool } from '../db.js'
 import { v4 as uuidv4 } from 'uuid';
 
 // Muestra todos los compradores de sorteo
-
 export const getSorteoBuyers = async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM buyers_sorteo')
