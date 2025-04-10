@@ -35,20 +35,20 @@ export const  getLastWinners = async (req,res) => {
       rows.map((item,index) => {
         console.log(item.fecha)
         if (item.tipo_premio === 'premio_principal' ) {
-          seccion[1].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido} ${formatDate(item.fecha)}` })
+          seccion[1].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido}`, fecha: `${formatDate(item.fecha)}`, premio:`${item.descripcion}` })
         }
         if (item.tipo_premio === 'premio_sorpresa' ) {
-          seccion[2].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido} ${formatDate(item.fecha)}` })
+          seccion[2].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido}`, fecha: `${formatDate(item.fecha)}`, premio:`${item.descripcion}`})
         }
         if (item.tipo_premio === 'primeros_eliminados' ) {
-          seccion[3].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido} ${formatDate(item.fecha)}` })
+          seccion[3].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido}`, fecha: `${formatDate(item.fecha)}`, premio:`${item.descripcion}` })
         }
       })
     }
     const [winners] = await pool.query('SELECT * FROM winners_sorteo ORDER BY fecha DESC LIMIT 6')
     if (winners.length > 0) {
       winners.map((item,index) => {
-        seccion[0].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido} ${formatDate(item.fecha)}` })
+        seccion[0].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido}`, fecha: `${formatDate(item.fecha)}` })
      })
     }
      return res.status(200).json({
