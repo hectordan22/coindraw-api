@@ -1,5 +1,6 @@
 // libreria o modulo que nos ayuda con la conexion a la Base de Datos
 import { pool } from "../db.js";
+import moment from "moment-timezone";
 
 // Modulo que nos ayuda a generar un id unico en automatico
 import { v4 as uuidv4 } from "uuid";
@@ -7,40 +8,43 @@ import { v4 as uuidv4 } from "uuid";
 // Modulo que me trae el precio del Dolar Paralelo Venezuela
 import { getMonitor } from "consulta-dolar-venezuela";
 
-import fs from 'fs';
+/* Para websockets import { broadcastRifaUpdate } from '../websocket/index.js' */
+
+// Almacén de clientes conectados para las rifas SSE (en memoria, para simplificar)
+const clients = new Set();
+
+import fs from "fs";
 
 const saveImage = (file) => {
-    let cleanName = file.originalname.replace(" ", "-");
-    const newPath = `./public/premios/${cleanName}` 
-    fs.renameSync(file.path, newPath)
-    return { 
-     nameImage:cleanName
-    }
- }
+  let cleanName = file.originalname.replace(" ", "-");
+  const newPath = `./public/premios/${cleanName}`;
+  fs.renameSync(file.path, newPath);
+  return {
+    nameImage: cleanName,
+  };
+};
 
 /**
  * Muestra todos los compradores de las Rifas
  */
 export const getRifasBuyers = async (req, res) => {
-  console.log("se llama a todos los que compraron Rifas");
   try {
     const [rows] = await pool.query("SELECT * FROM buyers_rifa");
-      return res.status(200).json({
-        error: false,
-        response: rows,
-      });
- 
+    return res.status(200).json({
+      error: false,
+      response: rows,
+    });
   } catch (error) {
-      return res.status(500).json({
-        error: true,
-        response:
-          "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
-      });
+    return res.status(500).json({
+      error: true,
+      response:
+        "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
+    });
   }
 };
 
 export const getBuyerRifaId = async (req, res) => {
-  const boleto = req.params.boleto;
+  const { boleto, rifa } = req.query;
   try {
     const [winners] = await pool.query(
       "SELECT * FROM winners_rifa WHERE boleto = ?",
@@ -52,29 +56,28 @@ export const getBuyerRifaId = async (req, res) => {
         "SELECT * FROM buyers_rifa WHERE boleto = ?",
         [boleto]
       );
-        if (query.length > 0) {
-          const { nombre, apellido, cedula } = query[0];
-          res.status(200).json({
-            error: false,
-            user: {
-              nombre,
-              apellido,
-              cedula,
-            },
-          });
-        } else {
-          res.status(404).json({
-            error: true,
-            message: "No existe compra registrada con ese numero de boleto",
-          });
-        }
-    }else{
+      if (query.length > 0) {
+        const { nombre, apellido, cedula } = query[0];
+        res.status(200).json({
+          error: false,
+          user: {
+            nombre,
+            apellido,
+            cedula,
+          },
+        });
+      } else {
+        res.status(404).json({
+          error: true,
+          message: "No existe compra registrada con ese numero de boleto",
+        });
+      }
+    } else {
       res.status(200).json({
         error: true,
         message: "Dicha persona ya fue registrada como ganador",
       });
     }
-   
   } catch (error) {
     return res.status(500).json({
       error: true,
@@ -84,7 +87,6 @@ export const getBuyerRifaId = async (req, res) => {
       },
     });
   }
- 
 };
 
 /**
@@ -142,27 +144,93 @@ export const comprarRifa = async (req, res) => {
   }
 };
 
-// method PUT para actualizar una pregunta
-export const updateCustomer = async (req, res) => {
-  const { id } = req.params;
-  const { nombre, apellido, cedula, telefono } = req.body;
+export const sseRifa = (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  // Agregar este cliente al conjunto
+  clients.add(res);
+  console.log(`Cliente conectado. Total: ${clients.size}`);
+
+  // Eliminar cliente cuando se desconecte
+  req.on("close", () => {
+    clients.delete(res);
+    console.log(`Cliente desconectado. Total: ${clients.size}`);
+  });
+};
+
+export const updateStatusRifa = async (req,res) => {
+    const { newStatus , id }  = req.body
 
   try {
     const [result] = await pool.query(
-      "UPDATE buyers SET nombre = ?, apellido = ?, cedula = ?, telefono = ?  WHERE id = ?",
-      [nombre, apellido, cedula, telefono, id]
+      "UPDATE rifa SET status = ?  WHERE id = ?",
+      [newStatus, id]
     );
 
-    if (result.affectedRows === 0)
-      return res.status(404).json({
-        message: "No se encontro el empleado",
+    if (result.affectedRows === 0) {
+      return res.status(200).json({
+        error: true,
+        response: "No se pudo actualizar el estado de la Rifa",
       });
+    }
 
-    res.sendStatus(204);
+    return res.status(200).json({
+      error: false,
+      response: "estado de la rifa actualizado exitosamente",
+    });
+
+  } catch (error) {
+    if (error) {
+      return res.status(500).json({
+        error: true,
+        response: "Ha ocurrido temporalmente debido a un error inesperado",
+      });
+    }
+  
+  }
+
+}
+
+// method PUT para actualizar una pregunta
+export const updateRifa = async (req, res) => {
+  const { id } = req.params;
+  const { date, hour, name } = req.body;
+
+  try {
+    const [result] = await pool.query(
+      "UPDATE rifa SET nombre = ?, fecha = ?, hora = ?  WHERE id = ?",
+      [name, date, hour, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(200).json({
+        error: true,
+        response: "No se pudo actualizar la Rifa",
+      });
+    }
+    const [rows] = await pool.query(
+      "SELECT * FROM rifa ORDER BY STR_TO_DATE(CONCAT(fecha, ' ', hora), '%m/%d/%Y %H:%i') DESC LIMIT 1"
+    );
+    if (rows.length > 0) {
+      const newDataRifa = rows[0]
+      // 2. Notificar a TODOS los clientes conectados via SSE
+      clients.forEach((client) => {
+        client.write("event: rifaActualizada\n");
+        client.write(`data: ${JSON.stringify(newDataRifa)}\n\n`);
+      });
+    }
+
+    return res.status(200).json({
+      error: false,
+      response: "La rifa se ha Actualizado correctamente",
+    });
   } catch (error) {
     console.log(error.message);
     return res.status(500).json({
-      message: "Ha ocurrido temporalmente debido a un error inesperado",
+      error: true,
+      response: "Ha ocurrido temporalmente debido a un error inesperado",
     });
   }
 };
@@ -207,14 +275,64 @@ export const getPriceDolar = async (req, res) => {
 };
 
 export const getPremios = async (req, res) => {
-  const { addWinner } = req.query // este parametro es solo cuando se desea agregar un nuevo ganador y asociarlo a un premio
+  const { admin } = req.query; // este parametro es solo cuando se desea agregar un nuevo ganador y asociarlo a un premio
 
   try {
-   const query = addWinner ? 
-   "SELECT p.* FROM premios p LEFT JOIN winners_rifa w ON p.id = w.id_premio WHERE w.id_premio IS NULL ORDER BY number_premio ASC":
-   "SELECT * FROM premios"
-   const [result] = await pool.query(query);
-    console.log(result)
+    // 1. Obtener el ID de la rifa más reciente (comprobar si hay una rifa activa actualizada)
+    const queryId =
+      "SELECT * FROM rifa ORDER BY STR_TO_DATE(CONCAT(fecha, ' ', hora), '%m/%d/%Y %H:%i') DESC LIMIT 1";
+    const [rifaRows] = await pool.query(queryId);
+    const rifaId = rifaRows[0]?.id; // Extraer el ID del primer resultado
+    const status = rifaRows[0]?.status
+
+    if (!rifaId || (status !== 'active' && status !== 'proccess' )) {
+      return res.status(200).json({
+        error: true,
+        response: {
+          message:
+            "No se encontro registro de ninguna Rifa Activa por el momento no hay premios disponibles",
+        },
+      });
+    }
+
+   
+
+    // Comprobar si existen premios asociados a esa Rifa
+  
+    const [premiosRows] = await pool.query(
+      "SELECT * FROM premios WHERE id_rifa = ?",
+      [rifaId]
+    );
+
+
+    if (premiosRows.length === 0 && !admin && status === 'active') {
+      return res.status(200).json({
+        error: true,
+        response: {
+          status,
+          message:
+            "Estamos creando una Nueva Rifa, en muy poco se publicaran los premios lo mas pronto posible",
+        },
+      });
+    }
+
+    // 2. Consulta de premios
+    let query;
+    let params = [];
+
+    if (admin) {
+      query =
+        "SELECT p.* FROM premios p LEFT JOIN temporal_winners_rifa w ON p.id = w.id_premio WHERE w.id_premio IS NULL AND p.id_rifa = ? ORDER BY p.number_premio ASC";
+      params = [rifaId];
+    } else {
+      query =
+        "SELECT * FROM premios INNER JOIN rifa ON premios.id_rifa = rifa.id WHERE id_rifa = ?";
+      params = [rifaId];
+    }
+
+    // 3. Ejecutar la consulta
+    const [result] = await pool.query(query, params);
+    console.log(result);
     const premio_principal = result.filter(
       (item) => item.tipo === "premio_principal"
     );
@@ -225,51 +343,55 @@ export const getPremios = async (req, res) => {
       (item) => item.tipo === "primeros_eliminados"
     );
 
-      res.status(200).json({
-        error: false,
-        response: {
-          premio_principal,
-          premio_sorpresa,
-          primeros_eliminados,
-        },
-      });
+    return res.status(200).json({
+      error: false,
+      response: {
+        premios: 0,
+        statusRifa:status,
+        rifaId,
+        nombreRifa: rifaRows[0].nombre,
+        fecha: rifaRows[0].fecha,
+        premio_principal,
+        premio_sorpresa,
+        primeros_eliminados,
+      },
+    });
   } catch (error) {
-    console.log(error)
-      return res.status(500).json({
-        error: true,
-        response:
-          "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
-      });
+    console.log(error);
+    return res.status(500).json({
+      error: true,
+      response:
+        "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
+    });
   }
 };
 
 export const createPremio = async (req, res) => {
-  const { title, description, premioNumber, type_premio } = req.body;
+  const { title, description, premioNumber, type_premio, rifaId } = req.body;
   const { nameImage } = saveImage(req.file);
   try {
     const [rows] = await pool.query(
-        "INSERT INTO premios (tipo,titulo,descripcion,imagen,number_premio) VALUES (?,?,?,?,?)",
-        [type_premio, title, description, nameImage, premioNumber]
-      );
-      //const [query] = await pool.query('SELECT * FROM buyers_rifa WHERE boleto = ?', [ticket])
-      if (rows.affectedRows === 0) {
-        return res.status(500).json({
-          error: true,
-          response: "No se pudo crear el recurso",
-        });
-      } else {
-        res.status(200).json({
-          error: false,
-          response: "El premio se ha registrado correctamente",
-        });
-      }
+      "INSERT INTO premios (tipo,titulo,descripcion,imagen,number_premio,id_rifa) VALUES (?,?,?,?,?,?)",
+      [type_premio, title, description, nameImage, premioNumber, rifaId]
+    );
+    //const [query] = await pool.query('SELECT * FROM buyers_rifa WHERE boleto = ?', [ticket])
+    if (rows.affectedRows === 0) {
+      return res.status(500).json({
+        error: true,
+        response: "No se pudo crear el recurso",
+      });
+    } else {
+      res.status(200).json({
+        error: false,
+        response: "El premio se ha registrado correctamente",
+      });
+    }
   } catch (error) {
     return res.status(500).json({
-        error:true,
-        message: "Ha ocurrido temporalmente debido a un error inesperado",
-      });
+      error: true,
+      message: "Ha ocurrido temporalmente debido a un error inesperado",
+    });
   }
- 
 };
 
 export const updatePremio = async (req, res) => {
@@ -277,168 +399,235 @@ export const updatePremio = async (req, res) => {
   const id = body.id;
   try {
     const [rows] = await pool.query("SELECT * FROM premios WHERE id = ?", [id]);
-     let image 
+    let image;
     if (req.file) {
       const { nameImage } = saveImage(req.file);
-      image = nameImage
-      console.log(image)
-    }else{
+      image = nameImage;
+      console.log(image);
+    } else {
       image = rows[0].imagen;
     }
-    
-     console.log(image)
+
+    console.log(image);
     const title = body.title ? body.title : rows[0].titulo;
-    const description = body.description? body.description: rows[0].descripcion;
+    const description = body.description
+      ? body.description
+      : rows[0].descripcion;
 
     const [result] = await pool.query(
       "UPDATE premios SET titulo = ?, descripcion = ?, imagen = ?  WHERE id = ?",
       [title, description, image, id]
     );
 
-    if (result.affectedRows === 0){
+    if (result.affectedRows === 0) {
       return res.status(200).json({
-        error:true,
+        error: true,
         response: "No se encontro registro con ese id",
       });
     }
     res.status(200).json({
-      error:false,
-      response:'Premio actualizado correctamente'
-    })
+      error: false,
+      response: "Premio actualizado correctamente",
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({
-      error:true,
+      error: true,
       response: "Ha ocurrido temporalmente debido a un error inesperado",
     });
   }
-
 };
 
-export const addNewRifa = async (req,res) => {
-  const {date,hour,name} = req.body
-  console.log(req.body)
-  const nombre = name || 'Super Rifa'
+export const addNewRifa = async (req, res) => {
+  const { date, hour, name } = req.body;
+  console.log(req.body);
+  const nombre = name || "Super Rifa";
   try {
     const [rows] = await pool.query(
       "INSERT INTO rifa (nombre,fecha,hora) VALUES (?,?,?)",
       [nombre, date, hour]
     );
     if (rows.affectedRows === 0) {
-        return res.status(200).json({
-          error: true,
-          response: "No se pudo crear el recurso",
-        });
+      return res.status(200).json({
+        error: true,
+        response: "No se pudo crear el recurso",
+      });
     } else {
-        return res.status(200).json({
-          error: false,
-          response: "La hora de la rifa se ha registrado correctamente",
+      const [rows] = await pool.query(
+        "SELECT * FROM rifa ORDER BY STR_TO_DATE(CONCAT(fecha, ' ', hora), '%m/%d/%Y %H:%i') DESC LIMIT 1"
+      );
+      if (rows.length > 0) {
+        const newDataRifa = rows[0]
+        // 2. Notificar a TODOS los clientes conectados via SSE
+        clients.forEach((client) => {
+          client.write("event: rifaCreada\n");
+          client.write(`data: ${JSON.stringify(newDataRifa)}\n\n`);
         });
+       }
+      return res.status(200).json({
+        error: false,
+        response: "La hora de la rifa se ha registrado correctamente",
+      });
     }
   } catch (error) {
-    console.log(error)
-      return res.status(500).json({
-        error:true,
-        response: "Ha ocurrido temporalmente debido a un error inesperado",
-      });
+    console.log(error);
+    return res.status(500).json({
+      error: true,
+      response: "Ha ocurrido temporalmente debido a un error inesperado",
+    });
   }
+};
+
+/**
+ * Valida si una rifa está vigente (considerando hora exacta en Venezuela).
+ * @param {string} fechaStr - Formato "MM/DD/YYYY" (ej: "07/20/2024").
+ * @param {string} horaStr - Formato "HH:mm" (ej: "18:25" para 6:25 PM).
+ * @returns {boolean} - `true` si la rifa está vigente, `false` si ya expiró.
+ */
+
+/*
+export function validarVigenciaRifa(fechaStr, horaStr) {
+  // 1. Parsear fecha y hora (formato: "YYYY-MM-DD" y "HH:mm")
+  const [anio, mes, dia] = fechaStr.split("-");
+  const [horas, minutos] = horaStr.split(":");
+
+  // 2. Crear objeto moment en zona horaria de Venezuela (CON SEGUNDOS)
+  const rifaDateTime = moment.tz(
+    {
+      year: anio,
+      month: mes - 1, // Restar 1 porque meses en moment son 0-11
+      day: dia,
+      hour: horas,
+      minute: minutos,
+      second: 0, // Opcional: forzar segundos a 0 si no se especifican
+    },
+    "America/Caracas"
+  );
+
+  // 3. Obtener hora actual en Venezuela (CON SEGUNDOS)
+  const ahoraVenezuela = moment().tz("America/Caracas");
+
+  // 4. Debug: Mostrar fechas con segundos
+  console.log("Rifa:", rifaDateTime.format("YYYY-MM-DD HH:mm:ss"));
+  console.log("Ahora:", ahoraVenezuela.format("YYYY-MM-DD HH:mm:ss"));
+
+  // 5. Comparación exacta (incluyendo segundos)
+  return rifaDateTime.isSameOrAfter(ahoraVenezuela);
 }
+
+*/
 
 export const getRifa = async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM rifa");
-    if(!req && !res) return {
-      error: false,
-      response: rows
-    }
-      return res.status(200).json({
+    const [rows] = await pool.query(
+      "SELECT * FROM rifa ORDER BY STR_TO_DATE(CONCAT(fecha, ' ', hora), '%m/%d/%Y %H:%i') DESC LIMIT 1"
+    );
+     
+    if (!req && !res)
+      return {
         error: false,
-        response: rows
-      });
+        status:rows.length > 0 ? rows[0].status:'inactive',
+        response: rows.length > 0 ? rows : [],
+      };
+    return res.status(200).json({
+      error: false,
+      status:rows.length > 0 ? rows[0].status:'inactive',
+      response: rows.length > 0 ? rows : [],
+    });
   } catch (error) {
-    if(!req && !res) return {
-      error: true,
-      response:
-        "La ruta solicitada no esta disponible temporalmente debido a un error inesperado"
-    }
-      return res.status(500).json({
+    if (!req && !res)
+      return {
         error: true,
         response:
-          "La ruta solicitada no esta disponible temporalmente debido a un error inesperado"
-      });
+          "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
+      };
+    return res.status(500).json({
+      error: true,
+      response:
+        "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
+    });
   }
 };
 
 // busca el listado de los ganadores del sorteo
 export const getLastWinnersRifa = async (req, res) => {
   try {
-      const [rows] = await pool.query('SELECT winners_rifa.nombre, winners_rifa.id, winners_rifa.apellido, winners_rifa.cedula,winners_rifa.boleto, winners_rifa.url_video, winners_rifa.fecha, premios.tipo AS tipo_premio, premios.descripcion FROM winners_rifa INNER JOIN premios ON winners_rifa.id_premio = premios.id')
-          return res.status(200).json({
-              error: false,
-              response: rows
-          })
+    const [rows] = await pool.query("SELECT * FROM winners_rifa_history");
+    return res.status(200).json({
+      error: false,
+      response: rows,
+    });
   } catch (error) {
-      console.log(error)
-          return res.status(500).json({
-              error: true,
-              response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
-          })
+    console.log(error);
+    return res.status(500).json({
+      error: true,
+      response:
+        "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
+    });
   }
+};
 
-}
-
-export const updateVideoRifa = async (req,res) => {
-  const {id, urlVideoSorteo} = req.body
+export const updateVideoRifa = async (req, res) => {
+  const { id, urlVideoSorteo } = req.body;
   try {
-      const [result] = await pool.query('UPDATE winners_rifa SET url_video = ? WHERE id = ?', [urlVideoSorteo, id]);
-    
-      if (result.affectedRows > 0) {
-        res.status(200).json({
-          error:false,
-          response:'Usuario actualizado correctamente'
-        })
-      } else {
-          res.status(200).json({
-              error:true,
-              response:'No se encontro un usuario con ese id'
-          })
-      }
-    } catch (error) {
-      return res.status(500).json({
-          error: true,
-          response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
-      })
+    const [result] = await pool.query(
+      "UPDATE winners_rifa SET url_video = ? WHERE id = ?",
+      [urlVideoSorteo, id]
+    );
+
+    if (result.affectedRows > 0) {
+      res.status(200).json({
+        error: false,
+        response: "Usuario actualizado correctamente",
+      });
+    } else {
+      res.status(200).json({
+        error: true,
+        response: "No se encontro un usuario con ese id",
+      });
     }
-}
-
-export const addWinnerRifa = async (req,res) => {
-  const {nombre, apellido,cedula, boleto, id_premio} = req.body
-  try {
-      const [query] = await pool.query('SELECT * FROM  winners_rifa WHERE boleto = ?', [boleto])
-      if (query.length === 0) {
-          const [rows] = await pool.query('INSERT INTO winners_rifa (nombre,apellido,cedula,boleto,id_premio) VALUES (?,?,?,?,?)', [nombre, apellido, cedula, boleto,id_premio])
-          if(rows.affectedRows === 1){
-              res.status(200).json({
-                  error:false,
-                  message:'registro exitoso'
-              })
-          }else{
-              res.status(200).json({
-                  error:true,
-                  message:'El usuario no pudo registrarse'
-              })
-          }
-      }else{
-          res.status(200).json({
-              error:true,
-              message: 'Este ganador de Rifa ya fue registrado'
-          })
-      }
   } catch (error) {
-      res.status(500).json({
-          error:true,
-          message: 'Ocurrio un error inesperado. Intentalo mas tarde'
-      })
-  } 
-}
+    return res.status(500).json({
+      error: true,
+      response:
+        "La ruta solicitada no esta disponible temporalmente debido a un error inesperado",
+    });
+  }
+};
 
+export const addWinnerRifa = async (req, res) => {
+  const { nombre, apellido, cedula, boleto, id_premio } = req.body;
+  try {
+    const [query] = await pool.query(
+      "SELECT * FROM  winners_rifa WHERE boleto = ?",
+      [boleto]
+    );
+    if (query.length === 0) {
+      const [rows] = await pool.query(
+        "INSERT INTO winners_rifa (nombre,apellido,cedula,boleto,id_premio) VALUES (?,?,?,?,?)",
+        [nombre, apellido, cedula, boleto, id_premio]
+      );
+      if (rows.affectedRows === 1) {
+        res.status(200).json({
+          error: false,
+          message: "registro exitoso",
+        });
+      } else {
+        res.status(200).json({
+          error: true,
+          message: "El usuario no pudo registrarse",
+        });
+      }
+    } else {
+      res.status(200).json({
+        error: true,
+        message: "Este ganador de Rifa ya fue registrado",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      error: true,
+      message: "Ocurrio un error inesperado. Intentalo mas tarde",
+    });
+  }
+};

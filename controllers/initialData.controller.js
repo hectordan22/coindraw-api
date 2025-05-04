@@ -29,19 +29,18 @@ export const  getLastWinners = async (req,res) => {
     }
 ]
   try {
-    const [rows] = await pool.query('SELECT winners_rifa.nombre, winners_rifa.apellido, winners_rifa.cedula, winners_rifa.url_video, winners_rifa.fecha, premios.tipo AS tipo_premio, premios.descripcion FROM winners_rifa INNER JOIN premios ON winners_rifa.id_premio = premios.id')
-    console.log(rows)
+    const [rows] = await pool.query('SELECT * FROM winners_rifa_history')
     if (rows.length > 0) {
       rows.map((item,index) => {
-        console.log(item.fecha)
+        
         if (item.tipo_premio === 'premio_principal' ) {
-          seccion[1].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido} ${formatDate(item.fecha)}` })
+          seccion[1].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre_ganador} ${item.apellido_ganador} ${formatDate(item.fecha)}` })
         }
         if (item.tipo_premio === 'premio_sorpresa' ) {
-          seccion[2].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido} ${formatDate(item.fecha)}` })
+          seccion[2].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre_ganador} ${item.apellido_ganador} ${formatDate(item.fecha)}` })
         }
         if (item.tipo_premio === 'primeros_eliminados' ) {
-          seccion[3].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre} ${item.apellido} ${formatDate(item.fecha)}` })
+          seccion[3].videos.push({ id: index+1, url: item.url_video, miniatura: 'http://localhost:3000/images/person.jpg', title: `${item.nombre_ganador} ${item.apellido_ganador} ${formatDate(item.fecha)}` })
         }
       })
     }
@@ -56,7 +55,6 @@ export const  getLastWinners = async (req,res) => {
             response: seccion
     })
 } catch (error) {
-    console.log(error)
         return res.status(500).json({
             error: true,
             response: 'La ruta solicitada no esta disponible temporalmente debido a un error inesperado'
@@ -87,7 +85,6 @@ const formatoHora = new Intl.DateTimeFormat('es-ES', {
 
 export const initialData =  async (req, res) => {
   const banner = await getBannerInicio()
-  console.log(banner)
   const updateRoutesBanner = !(banner.error) ? banner.response.map(item => {
       return {
         ...item,
@@ -96,7 +93,7 @@ export const initialData =  async (req, res) => {
   }) : [] 
   const videoInicial = await getVideoInitial()
    const rifa = await getRifa()
-   console.log(rifa)
+   
   return res.status(200).json({
     error: false,
     response: {
@@ -107,10 +104,11 @@ export const initialData =  async (req, res) => {
         description:
           "Una pequeña descripcion sobre como hacer dinero con nosotros y poder salir adelante en cualquier meta que te propongas en la vida, luchando y trabajando en lo que te apasiona",
       },
-      horaRifa: !(rifa.error) ? rifa.response[0].hora : '',
-      fechaRifa: !(rifa.error) ? rifa.response[0].fecha : '',
+      horaRifa: rifa.error ? '' : (rifa.response[0]?.hora || ''),
+      fechaRifa: rifa.error ? '' : (rifa.response[0]?.fecha || ''),
+      rifaId: rifa.error ? '' : (rifa.response[0]?.id || null),
       participandoSorteo: 1340,
-      rifaActiva: true,
+      rifaStatus: rifa.status,
       lastWinners: [
         {
           id: "1",
@@ -307,7 +305,7 @@ export const addMultiBanner = async (req,res) => {
   const noAdds = [];
   try {
     for (const imagen of banner) {
-        console.log(imagen)
+       
       const { nameImage } = saveImage(imagen);
       const [result] = await pool.query(
         "INSERT INTO banner_inicio (image) VALUES (?) ",
@@ -341,7 +339,7 @@ export const addMultiBanner = async (req,res) => {
           });
       }
   } catch (error) {
-    console.log(error)
+   
       return res.status(500).json({
         error: true,
         response:
@@ -369,7 +367,7 @@ export const addSingleBanner = async (req,res) => {
          });
     }
 } catch (error) {
-console.log(error)
+
   return res.status(500).json({
     error: true,
     response:
@@ -387,7 +385,6 @@ export const replaceAllBaner = async (req,res) => {
     const [query] = await pool.query("DELETE FROM banner_inicio");
     if (query.affectedRows > 0) {
       for (const imagen of banner) {
-        console.log(imagen)
       const { nameImage } = saveImage(imagen);
       const [result] = await pool.query(
         "INSERT INTO banner_inicio (image) VALUES (?) ",
@@ -430,7 +427,6 @@ export const replaceAllBaner = async (req,res) => {
 
   
   } catch (error) {
-    console.log(error)
       return res.status(500).json({
         error: true,
         response:
@@ -461,7 +457,6 @@ export const deleteImageBanner = async (req,res) => {
        
     }
 } catch (error) {
-console.log(error)
   return res.status(500).json({
     error: true,
     response:
